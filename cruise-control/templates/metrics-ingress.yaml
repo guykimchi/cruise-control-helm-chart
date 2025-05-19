@@ -1,0 +1,23 @@
+{{- if .Values.cruiseControl.metricsIngress.enable }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "cruise-control.fullname" . }}-metrics
+  namespace: {{ .Values.cruiseControl.metricsIngress.namespace | default .Release.Namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: {{ .Values.cruiseControl.metricsIngress.rewriteTarget | default "/select/0/prometheus/$1" | quote }}
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: {{ .Values.cruiseControl.metricsIngress.ingressClassName | default "internal-services-nginx" }}
+  rules:
+    - host: {{ .Values.cruiseControl.metricsIngress.host }}
+      http:
+        paths:
+          - path: {{ .Values.cruiseControl.metricsIngress.path | default "/(.*)" | quote }}
+            pathType: {{ .Values.cruiseControl.metricsIngress.pathType | default "ImplementationSpecific" }}
+            backend:
+              service:
+                name: {{ .Values.cruiseControl.metricsIngress.service.name | default "vmcluster-vmselect" }}
+                port:
+                  number: {{ .Values.cruiseControl.metricsIngress.service.port | default 8481 }}
+{{- end }}

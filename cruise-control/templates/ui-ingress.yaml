@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "cruise-control.fullname" . }}-ui-ingress
+  annotations:
+    {{- $default := dict "nginx.ingress.kubernetes.io/use-regex" "true" }}
+    {{- $merged := merge $default (default dict .Values.cruiseControl.ui.ingress.annotations) }}
+    {{- toYaml $merged | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.cruiseControl.ui.ingress.ingressClassName | default "internal-services-nginx" }}
+  rules:
+    - host: {{ .Values.cruiseControl.ui.ingress.host }}
+      http:
+        paths:
+          - path: {{ .Values.cruiseControl.ui.ingress.path | default "/(.*)" | quote }}
+            pathType: {{ .Values.cruiseControl.ui.ingress.pathType | default "ImplementationSpecific" }}
+            backend:
+              service:
+                name: {{ include "cruise-control.fullname" . }}-service
+                port:
+                  number: {{ .Values.cruiseControl.service.port | default 9090 }}

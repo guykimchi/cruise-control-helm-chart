@@ -1,0 +1,95 @@
+cruiseControl:
+  replicaCount: 1  # Number of Cruise Control pod replicas
+
+  nameOverride: ""  # Optional override for the chart name
+  fullnameOverride: ""  # Optional override for the fully qualified resource name
+
+  envName: "your-environment"  # Logical environment name (e.g., dev, staging, prod)
+  kafkaClusterName: "your-kafka-cluster-name"  # Used to display the Kafka cluster in the Cruise Control UI
+
+  serviceAccount:
+    create: false  # Whether to create a new Kubernetes ServiceAccount
+    name: ""  # Name of an existing ServiceAccount to use
+
+  image:
+    repository: your-registry/your-cruise-control-image  # Docker image repository
+    tag: your-tag  # Docker image tag (version)
+    pullPolicy: IfNotPresent  # Kubernetes image pull policy
+
+  imagePullSecrets:
+    - name: your-docker-secret  # Docker registry pull secret
+
+  service:
+    type: ClusterIP  # Kubernetes service type (ClusterIP, NodePort, LoadBalancer)
+    port: 9090  # Service port exposed internally
+    targetPort: 9090  # Port on which the Cruise Control container listens
+
+  ui:
+    config: "your-env,your-env,/kafkacruisecontrol"  # Environment, cluster alias, and Cruise Control endpoint for UI configuration
+    ingress:
+      host: "your-ui-host.example.com"  # External host for accessing Cruise Control UI
+      ingressClassName: your-ingress-class  # Ingress class to use (e.g., nginx)
+      path: /(.*)  # Path routing expression
+      pathType: ImplementationSpecific  # Path matching strategy
+      annotations: []  # Custom ingress annotations for additional behavior
+
+  # Metrics ingress configuration below is specifically needed if using VictoriaMetrics.
+  # If using Prometheus, you only need to specify the 'host' field and change the enable flag to false.
+  metricsIngress:
+    enable: true
+    host: "your-metrics-host.example.com"  # Hostname for metrics backend (e.g., VictoriaMetrics)
+    namespace: monitoring  # Namespace where metrics backend is deployed
+    rewriteTarget: /select/0/prometheus/$1  # Rewrite rule for Prometheus endpoint
+    ingressClassName: your-ingress-class  # Ingress class to use
+    path: /(.*)  # Path regex for metrics traffic
+    pathType: ImplementationSpecific  # Type of path matching used
+    service:
+      name: your-vmselect-service  # Name of the backend metrics service
+      port: 8481  # Port of the backend metrics service
+
+  brokers:
+    bootstrapServers:
+      - b-1.example.com:9092  # Bootstrap broker 1
+      - b-2.example.com:9092  # Bootstrap broker 2
+      - b-3.example.com:9092  # Bootstrap broker 3
+      - b-4.example.com:9092  # Bootstrap broker 4
+    zookeepers:
+      - z-1.example.com:2181  # Zookeeper node 1
+      - z-2.example.com:2181  # Zookeeper node 2
+      - z-3.example.com:2181  # Zookeeper node 3
+    brokerCapacities:
+      - brokerId: "1"  # Broker ID
+        capacity:
+          DISK: "20480000"  # Disk capacity in MB
+          CPU:
+            num.cores: "4"  # Number of CPU cores
+          NW_IN: "10000"  # Network inbound throughput in KB/s
+          NW_OUT: "10000"  # Network outbound throughput in KB/s
+      - brokerId: "2"
+        capacity:
+          DISK: "20480000"
+          CPU:
+            num.cores: "4"
+          NW_IN: "10000"
+          NW_OUT: "10000"
+      - brokerId: "3"
+        capacity:
+          DISK: "20480000"
+          CPU:
+            num.cores: "4"
+          NW_IN: "10000"
+          NW_OUT: "10000"
+      - brokerId: "4"
+        capacity:
+          DISK: "20480000"
+          CPU:
+            num.cores: "4"
+          NW_IN: "10000"
+          NW_OUT: "10000"
+      - brokerId: "-1"  # Default capacity for any dynamically added broker
+        capacity:
+          DISK: "20480000"
+          CPU:
+            num.cores: "4"
+          NW_IN: "10000"
+          NW_OUT: "10000"

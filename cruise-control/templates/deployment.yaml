@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cruise-control.fullname" . }}
+  labels:
+    {{- include "cruise-control.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.cruiseControl.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "cruise-control.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cruise-control.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "cruise-control.serviceAccountName" . }}
+      imagePullSecrets:
+        {{- toYaml .Values.cruiseControl.imagePullSecrets | nindent 8 }}
+      containers:
+        - name: {{ include "cruise-control.name" . }}
+          image: "{{ .Values.cruiseControl.image.repository }}:{{ .Values.cruiseControl.image.tag }}"
+          imagePullPolicy: {{ .Values.cruiseControl.image.pullPolicy }}
+          ports:
+            - containerPort: 9090
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            privileged: true
+          tty: true
+          stdin: true
+          volumeMounts:
+            - name: ui-config
+              mountPath: /opt/cruise-control/cruise-control-ui/dist/static/config.csv
+              subPath: config.csv
+            - name: brokers-config
+              mountPath: /opt/cruise-control/config/capacity.json
+              subPath: brokerCapacity.json
+            - name: properties-config
+              mountPath: /opt/cruise-control/config/cruisecontrol.properties
+              subPath: cruisecontrol.properties
+      volumes:
+        - name: ui-config
+          configMap:
+            name:  {{ include "cruise-control.fullname" . }}-ui-config
+        - name: brokers-config
+          configMap:
+            name:  {{ include "cruise-control.fullname" . }}-brokers-config
+        - name: properties-config
+          configMap:
+            name:  {{ include "cruise-control.fullname" . }}-properties-config
